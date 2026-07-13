@@ -213,7 +213,7 @@ for degree in (1, 3, 10):
 print("=" * 62)
 print("Answer: degree=1 underfits (both R2 low, high bias).")
 print("degree=3 matches the true process — highest test R2, small gap.")
-print("degree=15 overfits — train R2 ~1.0 while test R2 drops;")
+print("degree=10 overfits — train R2 ~1.0 while test R2 drops;")
 print("the widening gap shows the model is memorizing noise (high variance).")
 
 # Visualize the three fits
