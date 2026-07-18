@@ -195,7 +195,8 @@ def plot_decision_boundary(model, X, y, title):
     plt.title(title)
     plt.xlabel("Feature 0")
     plt.ylabel("Feature 1")
-    plt.show()
+    plt.savefig(f"{title.replace(' ', '_')}.png", dpi=150, bbox_inches="tight")
+    plt.close()
 
 
 model1 = MyDecisionTree(max_depth=2)
@@ -371,7 +372,8 @@ plt.xlabel("x")
 plt.ylabel("y")
 plt.title("Regression Tree: Piecewise Constant Prediction vs sin(x)")
 plt.legend()
-plt.show()
+plt.savefig("regression_tree_fit.png", dpi=150, bbox_inches="tight")
+plt.close()
 
 # 3-3 构建 1、5、10、50 和 200 棵树的随机森林。把训练准确率和测试准确率随树数量的变化画出来。观察到测试准确率会到平台期但不会下降（森林抗过拟合）。
 X_iris, y_iris = load_iris(return_X_y=True)
@@ -420,21 +422,21 @@ for name, (X, y) in Dataset.items():
 rng = np.random.RandomState(42)
 X_base, y = make_classification(
     n_samples=500, n_features=20, n_informative=2,
-    n_redundant=3, n_classes=3, random_state=42
+    n_redundant=3, n_clusters_per_class=1, n_classes=3, random_state=42
 )
-# 加 5 列高基数纯随机噪声（每个样本唯一）
-noise_cols = rng.randn(500, 5)
+# 加 10 列高基数纯随机噪声（每个样本唯一）
+noise_cols = rng.randn(500, 10)
 X_with_noise = np.column_stack([X_base, noise_cols])
 
 # 构造特征名：前 20 个 f0-f19，后 5 个 noise_0-noise_4
-feature_names = [f"f{i}" for i in range(20)] + [f"noise_{i}" for i in range(5)]
+feature_names = [f"f{i}" for i in range(20)] + [f"noise_{i}" for i in range(10)]
 
 X_train, X_test, y_train, y_test = train_test_split(
     X_with_noise, y, test_size=0.2, random_state=42
 )
 
 # Step 2: 训练决策树，读取 MDI 重要性
-model_mdi = MyDecisionTree(max_depth=None, criterion="gini")
+model_mdi = MyDecisionTree(max_depth=10, criterion="gini")
 model_mdi.fit(X_train, y_train)
 mdi_importances = model_mdi.feature_importances_
 
@@ -454,17 +456,18 @@ def permutation_importance(X, y, n_repeats=5, random_state=42):
     n_features = X.shape[1]
     rng_local = np.random.RandomState(random_state)
 
-    model_base = MyDecisionTree(max_depth=None, criterion="gini")
+    model_base = MyDecisionTree(max_depth=10, criterion="gini")
     model_base.fit(X_tr, y_tr)
     base_acc = np.mean(model_base.predict(X_te) == y_te)
 
     importance_scores = np.zeros(n_features)
     for feature_idx in range(n_features):
+        print(f"  特征 {feature_idx}/{n_features}...", end=" ", flush=True)
         scores = []
         for _ in range(n_repeats):
             X_shuffled = X_tr.copy()
             rng_local.shuffle(X_shuffled[:, feature_idx])
-            model = MyDecisionTree(max_depth=None, criterion="gini")
+            model = MyDecisionTree(max_depth=10, criterion="gini")
             model.fit(X_shuffled, y_tr)
             shuff_acc = np.mean(model.predict(X_te) == y_te)
             scores.append(base_acc - shuff_acc)
@@ -473,7 +476,8 @@ def permutation_importance(X, y, n_repeats=5, random_state=42):
 
 
 # Step 3: 计算置换重要性并画图对比
-perm_importances = permutation_importance(X_train, y_train, n_repeats=20)
+print("\n计算置换重要性 (30 features × 3 repeats = 90 trees)...")
+perm_importances = permutation_importance(X_train, y_train, n_repeats=3)
 
 perm_noise = [imp for name, imp in zip(feature_names, perm_importances) if "noise" in name]
 perm_real = [imp for name, imp in zip(feature_names, perm_importances) if "noise" not in name]
@@ -494,4 +498,5 @@ ax.set_title("MDI vs Permutation Importance:\nNoise features get high MDI but ~0
 ax.legend()
 ax.axhline(y=0, color="gray", linewidth=0.5)
 plt.tight_layout()
-plt.show()
+plt.savefig("mdi_vs_permutation.png", dpi=150, bbox_inches="tight")
+plt.close()
