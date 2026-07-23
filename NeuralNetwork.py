@@ -7,10 +7,11 @@ import torch
 import torch.nn as nn
 import time
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')   # 无图形界面后端，图片保存到文件
 import torchvision
 from torch.utils import data
 from torchvision import transforms
-from IPython import display
 from d2l import torch as d2l
 '''
 矢量化的操作，为什么要用tensor
@@ -174,7 +175,7 @@ def train_epoch_ch3(net, train_iter, loss, updater):  #@save
             # 使用定制的优化器和损失函数
             l.sum().backward()
             updater(X.shape[0])
-        metric.add(float(l.sum()), accuracy(y_hat, y), y.numel())
+        metric.add(float(l.sum().detach()), accuracy(y_hat, y), y.numel())
     # 返回训练损失和训练精度
     return metric[0] / metric[2], metric[1] / metric[2]
 
@@ -215,8 +216,8 @@ class Animator:  #@save
         for x, y, fmt in zip(self.X, self.Y, self.fmts):
             self.axes[0].plot(x, y, fmt)
         self.config_axes()
-        display.display(self.fig)
-        display.clear_output(wait=True)
+        self.fig.savefig('training_progress.png')
+        print(f'epoch {x[-1] if hasattr(x, "__iter__") else x}: loss/train_acc/test_acc updated')
 
 def train_ch3(net, train_iter, test_iter, loss, num_epochs, updater):  #@save
     """训练模型（定义见第3章）"""
@@ -250,3 +251,5 @@ def predict_ch3(net, test_iter, n=6):  #@save
         X[0:n].reshape((n, 28, 28)), 1, n, titles=titles[0:n])
 
 predict_ch3(net, test_iter)
+d2l.plt.savefig('prediction_results.png')
+print('预测结果已保存至 prediction_results.png')
